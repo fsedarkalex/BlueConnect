@@ -1,0 +1,10 @@
+{
+    "domain": "blueconnect",
+    "name": "Blue Connect GO",
+    "codeowners": ["@adamantivm"],
+    "dependencies": ["bluetooth_adapters"],
+    "version": "0.1.0",
+    "documentation": "https://github.com/adamantivm/BlueConnect",
+    "iot_class": "local_polling",
+    "requirements": []
+}
