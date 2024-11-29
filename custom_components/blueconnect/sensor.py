@@ -1,88 +1,160 @@
-"""Blueconnect GO sensor platform."""
+"""Support for BlueConnect Go ble sensors."""
+
+from __future__ import annotations
 
 import logging
-from datetime import timedelta
-import random
-from typing import Any, Callable, Dict, Optional
 
-import voluptuous as vol
+from .BlueConnectGo import BlueConnectGoDevice
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant import config_entries
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 from homeassistant.const import (
-    CONF_ADDRESS,
+    CONCENTRATION_PARTS_PER_MILLION,
+    PERCENTAGE,
+    UnitOfTemperature,
+    UnitOfElectricPotential,
+    UnitOfConductivity,
 )
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.typing import (
-    ConfigType,
-    DiscoveryInfoType,
-    HomeAssistantType,
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
 )
+from homeassistant.util.unit_system import METRIC_SYSTEM
 
 from .const import DOMAIN
 
-
 _LOGGER = logging.getLogger(__name__)
 
-# Time between updating data from GitHub
-SCAN_INTERVAL = timedelta(seconds=10)
+SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
+    "EC": SensorEntityDescription(
+        key="EC",
+        name="Electrical Conductivity",
+        native_unit_of_measurement=UnitOfConductivity.MICROSIEMENS,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:flash-triangle-outline",
+    ),
+    "salt": SensorEntityDescription(
+        key="salt",
+        name="Salt",
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:shaker-outline",
+    ),
+    "ORP": SensorEntityDescription(
+        key="ORP",
+        name="Oxidation-Reduction Potential",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        icon="mdi:alpha-v-circle",
+    ),
+    "pH": SensorEntityDescription(
+        key="pH",
+        name="pH",
+        device_class=SensorDeviceClass.PH,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:ph",
+    ),
+    "battery": SensorEntityDescription(
+        key="battery",
+        name="Battery",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+    ),
+    "temperature": SensorEntityDescription(
+        key="temperature",
+        name="Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:pool-thermometer",
+    ),
+}
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_ADDRESS): cv.string,
-    }
-)
 
-
-async def async_setup_platform(
-    hass: HomeAssistantType,
-    config: ConfigType,
-    async_add_entities: Callable,
-    discovery_info: Optional[DiscoveryInfoType] = None,
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: config_entries.ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the sensor platform."""
-    _LOGGER.info("async_setup_platform")
-    sensors = [BlueConnectGo(config[CONF_ADDRESS])]
-    async_add_entities(sensors, update_before_add=True)
+    """Set up the BlueConnect Go BLE sensors."""
+    is_metric = hass.config.units is METRIC_SYSTEM
+
+    coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
+        entry.entry_id
+    ]
+    sensors_mapping = SENSORS_MAPPING_TEMPLATE.copy()
+    entities = []
+    _LOGGER.debug("got sensors: %s", coordinator.data.sensors)
+    for sensor_type, sensor_value in coordinator.data.sensors.items():
+        if sensor_type not in sensors_mapping:
+            _LOGGER.debug(
+                "Unknown sensor type detected: %s, %s",
+                sensor_type,
+                sensor_value,
+            )
+            continue
+        entities.append(
+            BlueConnectSensor(
+                coordinator, coordinator.data, sensors_mapping[sensor_type]
+            )
+        )
+
+    async_add_entities(entities)
 
 
-class BlueConnectGo(Entity):
-    """Representation of a GitHub Repo sensor."""
+class BlueConnectSensor(
+    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
+):
+    """BlueConnect Go BLE sensors for the device."""
 
-    def __init__(self, address: str):
-        super().__init__()
-        self._address = address
-        self._temperature = None
-        self.force_update = True
-        self.current_temperature = random.randint(0, 100)
+    # _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        blueconnect_go_device: BlueConnectGoDevice,
+        entity_description: SensorEntityDescription,
+    ) -> None:
+        """Populate the BlueConnect Go entity with relevant data."""
+        super().__init__(coordinator)
+        self.entity_description = entity_description
+
+        name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+
+        self._attr_unique_id = f"{name}_{entity_description.key}"
+
+        self._id = blueconnect_go_device.address
+        self._attr_device_info = DeviceInfo(
+            connections={
+                (
+                    CONNECTION_BLUETOOTH,
+                    blueconnect_go_device.address,
+                )
+            },
+            name=name,
+            manufacturer="Blue Riiot",
+            model="Blue Connect Go",
+            hw_version=blueconnect_go_device.hw_version,
+            sw_version=blueconnect_go_device.sw_version,
+        )
 
     @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return "Blue Connect Go"
-
-    @property
-    def unique_id(self) -> str:
-        """Return the unique ID of the sensor."""
-        return self._address
-
-    @property
-    def state(self) -> str:
-        """Return the state of the sensor."""
-        return "on"
-
-    @property
-    def available(self) -> bool:
-        return True
-
-    @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
-        return {
-            "temperature": self.current_temperature,
-        }
-
-    async def async_update(self):
-        _LOGGER.info("async_update")
-        self.current_temperature = random.randint(0, 100)
-        _LOGGER.info(f"Temperature now is {self.current_temperature}")
+    def native_value(self) -> StateType:
+        """Return the value reported by the sensor."""
+        try:
+            return self.coordinator.data.sensors[self.entity_description.key]
+        except KeyError:
+            return None
