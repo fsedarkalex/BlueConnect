@@ -1,37 +1,26 @@
-"""Parser for BlueConnect Go BLE devices"""
+"""Parser for BlueConnect Go BLE devices."""
 
 from __future__ import annotations
 
-from threading import Event
-from functools import partial
-import random
 import asyncio
+from asyncio import Event
 import dataclasses
-import struct
-from collections import namedtuple
-from datetime import datetime
+from functools import partial
 import logging
+from logging import Logger
 
-# from logging import Logger
-from math import exp
-from typing import Any, Callable, Tuple
-
-from bleak import BleakClient, BleakError
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
 
-from .const import BATT_100, BATT_0
-
-
-READ_CHAR_UUID = "F3300003-F0A2-9B06-0C59-1BC4763B5C00"
-BUTTON_CHAR_UUID = "F3300002-F0A2-9B06-0C59-1BC4763B5C00"
+from .const import BUTTON_CHAR_UUID, NOTIFY_CHAR_UUID, NOTIFY_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
 class BlueConnectGoDevice:
-    """Response data with information about the Blue Connect Go device"""
+    """Response data with information about the Blue Connect Go device."""
 
     hw_version: str = ""
     sw_version: str = ""
@@ -54,7 +43,8 @@ class BlueConnectGoBluetoothDeviceData:
     def __init__(
         self,
         logger: Logger,
-    ):
+    ) -> None:
+        """Initialize the class."""
         super().__init__()
         self.logger = logger
         self.logger.debug("In Device Data")
@@ -62,23 +52,22 @@ class BlueConnectGoBluetoothDeviceData:
     async def _get_status(
         self, client: BleakClient, device: BlueConnectGoDevice
     ) -> BlueConnectGoDevice:
-        _LOGGER.info("Getting Status")
+        _LOGGER.debug("Getting Status")
 
         data_ready_event = Event()
 
         await client.start_notify(
-            READ_CHAR_UUID, partial(self._receive_status, device, data_ready_event)
+            NOTIFY_CHAR_UUID, partial(self._receive_status, device, data_ready_event)
         )
         await client.write_gatt_char(BUTTON_CHAR_UUID, b"\x01", response=True)
-        _LOGGER.info("Write sent")
+        _LOGGER.debug("Write sent")
 
-        # try:
-        #     await asyncio.wait_for(data_ready_event.wait(), timeout=20)
-        # except TimeoutError:
-        #     _LOGGER.warning("Timer expired")
-        await asyncio.sleep(15)
+        try:
+            await asyncio.wait_for(data_ready_event.wait(), timeout=NOTIFY_TIMEOUT)
+        except TimeoutError:
+            _LOGGER.warning("Timer expired")
 
-        _LOGGER.info("Status acquisition finished")
+        _LOGGER.debug("Status acquisition finished")
         return device
 
     async def _receive_status(
@@ -88,10 +77,10 @@ class BlueConnectGoBluetoothDeviceData:
         char_specifier: str,
         data: bytearray,
     ) -> None:
-        _LOGGER.info("Got new data")
+        _LOGGER.debug("Got new data")
         data_ready_event.set()
 
-        _LOGGER.info(
+        _LOGGER.debug(
             f"  -> frame array hex: {":".join([f"{byte:02X}" for byte in data])}"  # noqa: G004
         )
 
@@ -119,7 +108,7 @@ class BlueConnectGoBluetoothDeviceData:
     async def update_device(
         self, ble_device: BLEDevice, skip_query=False
     ) -> BlueConnectGoDevice:
-        """Connects to the device through BLE and retrieves relevant data"""
+        """Connect to the device through BLE and retrieves relevant data."""
         _LOGGER.debug("Update Device")
 
         device = BlueConnectGoDevice()

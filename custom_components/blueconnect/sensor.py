@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from .BlueConnectGo import BlueConnectGoDevice
-
 from homeassistant import config_entries
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,21 +14,21 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
-    UnitOfTemperature,
-    UnitOfElectricPotential,
     UnitOfConductivity,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
-from homeassistant.util.unit_system import METRIC_SYSTEM
 
+from .BlueConnectGo import BlueConnectGoDevice
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -89,7 +87,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the BlueConnect Go BLE sensors."""
-    is_metric = hass.config.units is METRIC_SYSTEM
 
     coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
         entry.entry_id

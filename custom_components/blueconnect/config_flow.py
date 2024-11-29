@@ -6,7 +6,6 @@ import dataclasses
 import logging
 from typing import Any
 
-from .BlueConnectGo import BlueConnectGoBluetoothDeviceData, BlueConnectGoDevice
 from bleak import BleakError
 import voluptuous as vol
 
@@ -19,6 +18,7 @@ from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.data_entry_flow import FlowResult
 
+from .BlueConnectGo import BlueConnectGoBluetoothDeviceData, BlueConnectGoDevice
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.error(
                 "Unknown error occurred from %s: %s", discovery_info.address, err
             )
-            raise err
+            raise
         return data
 
     async def async_step_bluetooth(
@@ -101,7 +101,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
             device = await self._get_device_data(discovery_info)
         except BCGoDeviceUpdateError:
             return self.async_abort(reason="cannot_connect")
-        except Exception:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except  # noqa: BLE001
             return self.async_abort(reason="unknown")
 
         name = get_name(device)
@@ -151,10 +151,10 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
 
             ##
             if not address.startswith("00:A0"):
-                _LOGGER.info(f"Skipping device: {address}")
+                _LOGGER.info(f"Skipping device: {address}")  # noqa: G004
                 continue
 
-            _LOGGER.info("Found My Device")
+            _LOGGER.info(f"Found BlueConnect Go Device: {address}")  # noqa: G004
             _LOGGER.debug("BCGo Discovery address: %s", address)
             _LOGGER.debug("BCGo Man Data: %s", discovery_info.manufacturer_data)
             _LOGGER.debug("BCGo advertisement: %s", discovery_info.advertisement)
@@ -171,7 +171,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
             except BCGoDeviceUpdateError:
                 _LOGGER.debug("Cannot Connect")
                 return self.async_abort(reason="cannot_connect")
-            except Exception:  # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except  # noqa: BLE001
                 _LOGGER.debug("Cannot Connect - Unknown")
                 return self.async_abort(reason="unknown")
             _LOGGER.debug("Getting Name")

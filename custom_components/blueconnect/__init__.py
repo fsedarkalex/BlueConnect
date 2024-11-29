@@ -5,16 +5,14 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
-
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util.unit_system import METRIC_SYSTEM
 
+from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -27,10 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     address = entry.unique_id
 
-    _LOGGER.info("async_setup_entry")
-
-    elevation = hass.config.elevation
-    is_metric = hass.config.units is METRIC_SYSTEM
+    _LOGGER.debug("async_setup_entry")
     assert address is not None
 
     ble_device = bluetooth.async_ble_device_from_address(hass, address)
@@ -42,7 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def _async_update_method():
         """Get data from BlueConnect Go BLE."""
-        _LOGGER.info("async_update_method")
+        _LOGGER.debug("async_update_method")
         ble_device = bluetooth.async_ble_device_from_address(hass, address)
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
 
