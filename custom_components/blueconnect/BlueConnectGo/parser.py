@@ -84,6 +84,8 @@ class BlueConnectGoBluetoothDeviceData:
             f"  -> frame array hex: {":".join([f"{byte:02X}" for byte in data])}"  # noqa: G004
         )
 
+        # TODO: All these readings need to be reviewed and improved
+
         raw_temp = int.from_bytes(data[1:3], byteorder="little")
         device.sensors["temperature"] = raw_temp / 100.0
 

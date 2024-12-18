@@ -40,6 +40,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfConductivity.MICROSIEMENS,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:flash-triangle-outline",
+        suggested_display_precision=0,
     ),
     "salt": SensorEntityDescription(
         key="salt",
@@ -51,10 +52,11 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
     "ORP": SensorEntityDescription(
         key="ORP",
         name="Oxidation-Reduction Potential",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         icon="mdi:alpha-v-circle",
+        suggested_display_precision=0,
     ),
     "pH": SensorEntityDescription(
         key="pH",
@@ -62,6 +64,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.PH,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:ph",
+        suggested_display_precision=1,
     ),
     "battery": SensorEntityDescription(
         key="battery",
@@ -77,6 +80,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:pool-thermometer",
+        suggested_display_precision=2,
     ),
 }
 
