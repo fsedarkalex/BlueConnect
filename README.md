@@ -2,7 +2,7 @@
 
 Home Assistant BLE Integration for the Blueriiot Blue Connect Go Pool Monitor
 
-This integration is heavily based (basiscally started as a copy/paste) on the [Yinmik BLE-YC01 Integration] by @jdeath.
+This integration is heavily based (basiscally started as a copy/paste) on the [Yinmik BLE-YC01 Integration](https://github.com/jdeath/BLE-YC01) by @jdeath.
 
 For discussion, details on the BLE decoding and other integration alternatives, please refer to the
 [Blue Connect pool measurements topic](https://community.home-assistant.io/t/blue-connect-pool-measurements/118901)
