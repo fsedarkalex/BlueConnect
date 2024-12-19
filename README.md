@@ -9,7 +9,7 @@ For discussion, details on the BLE decoding and other integration alternatives, 
 in the Home Assistant Community forum.
 
 All the BLE decoding details that made this integration possible are full credit of many generous community members
-on that thread including @vampcp, @JosePortillo, @rzulian and others.
+on that thread including @vampcp, @JosePortillo, @rzulian, @A.J.O and others.
 
 # Installation
 
