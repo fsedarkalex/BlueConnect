@@ -98,8 +98,12 @@ class BlueConnectGoBluetoothDeviceData:
         device.sensors["chlorine"] = (raw_orp / 4.0 - 5.0 - 650.0) / 200.0 * 10.0
 
         raw_cond = int.from_bytes(data[7:9], byteorder="little")
-        device.sensors["EC"] = 1.0 / (raw_cond * 0.000001) * 1.0615
-        device.sensors["salt"] = 1.0 / (raw_cond * 0.001) * 1.0615 * 500.0 / 1000.0
+        if raw_cond != 0:
+            device.sensors["EC"] = 1.0 / (raw_cond * 0.000001) * 1.0615
+            device.sensors["salt"] = 1.0 / (raw_cond * 0.001) * 1.0615 * 500.0 / 1000.0
+        else:
+            device.sensors["EC"] = None
+            device.sensors["salt"] = None
 
         raw_batt = int.from_bytes(data[9:11], byteorder="little")
         device.sensors["battery_voltage"] = raw_batt
