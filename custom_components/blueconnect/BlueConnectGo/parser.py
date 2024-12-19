@@ -93,16 +93,20 @@ class BlueConnectGoBluetoothDeviceData:
         device.sensors["pH"] = (2048 - raw_ph) / 232.0 + 7.0
 
         raw_orp = int.from_bytes(data[5:7], byteorder="little")
-        device.sensors["ORP"] = raw_orp / 3.86 - 21.57826
+        # device.sensors["ORP"] = raw_orp / 3.86 - 21.57826
+        device.sensors["ORP"] = raw_orp / 4.0 - 5.0
+        device.sensors["chlorine"] = (raw_orp / 4.0 - 5.0 - 650.0) / 200.0 * 10.0
 
-        raw_salt = int.from_bytes(data[7:9], byteorder="little")
-        device.sensors["salt"] = raw_salt / 25.0
+        raw_cond = int.from_bytes(data[7:9], byteorder="little")
+        device.sensors["EC"] = 1.0 / (raw_cond * 0.000001) * 1.0615
+        device.sensors["salt"] = 1.0 / (raw_cond * 0.001) * 1.0615 * 500.0 / 1000.0
 
-        raw_cond = int.from_bytes(data[9:11], byteorder="little")
-        device.sensors["EC"] = raw_cond / 0.4134
-
-        raw_batt = int(data[11])
-        device.sensors["battery"] = raw_batt
+        raw_batt = int.from_bytes(data[9:11], byteorder="little")
+        device.sensors["battery_voltage"] = raw_batt
+        BATT_MAX_MV = 3640
+        BATT_MIN_MV = 3400
+        batt_percent = (raw_batt - BATT_MIN_MV) / (BATT_MAX_MV - BATT_MIN_MV) * 100.0
+        device.sensors["battery"] = max(0, min(batt_percent * 100, 100))
 
         _LOGGER.debug("Got Status")
         return device

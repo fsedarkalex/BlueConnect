@@ -72,6 +72,17 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
+        icon="mdi:battery",
+        suggested_display_precision=1,
+    ),
+    "battery_voltage": SensorEntityDescription(
+        key="battery_voltage",
+        name="Battery Voltage",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        icon="mdi:battery",
+        suggested_display_precision=0,
     ),
     "temperature": SensorEntityDescription(
         key="temperature",
@@ -80,6 +91,15 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:pool-thermometer",
+        suggested_display_precision=2,
+    ),
+    "chlorine": SensorEntityDescription(
+        key="chlorine",
+        name="Free Chlorine",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        icon="mdi:chemical-weapon",
         suggested_display_precision=2,
     ),
 }
