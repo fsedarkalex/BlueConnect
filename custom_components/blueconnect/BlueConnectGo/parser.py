@@ -15,6 +15,8 @@ from bleak_retry_connector import establish_connection
 
 from .const import BUTTON_CHAR_UUID, NOTIFY_CHAR_UUID, NOTIFY_TIMEOUT
 
+import math
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -87,20 +89,52 @@ class BlueConnectGoBluetoothDeviceData:
         # TODO: All these readings need to be reviewed and improved
 
         raw_temp = int.from_bytes(data[1:3], byteorder="little")
-        device.sensors["temperature"] = raw_temp / 100.0
+        actual_temp = raw_temp / 100.0
+        device.sensors["temperature"] = actual_temp
 
         raw_ph = int.from_bytes(data[3:5], byteorder="little")
-        device.sensors["pH"] = (2048 - raw_ph) / 232.0 + 7.0
+        actual_ph = (2048 - raw_ph) / 232.0 + 7.2 #factor was 232.0 + 7.0 before
+        device.sensors["pH"] = actual_ph
 
         raw_orp = int.from_bytes(data[5:7], byteorder="little")
+        actual_orp = raw_orp / 4.0 - 5.0
         # device.sensors["ORP"] = raw_orp / 3.86 - 21.57826
-        device.sensors["ORP"] = raw_orp / 4.0 - 5.0
-        device.sensors["chlorine"] = (raw_orp / 4.0 - 5.0 - 650.0) / 200.0 * 10.0
+        device.sensors["ORP"] = actual_orp
+        
+        ## Chlorine calculation (below) has been elaborated with chatGPT
+
+        # Calculate Nernst factor (in mV per decade)
+        const_R = 8.314     # Universal gas constant (J/mol·K)
+        const_F = 96485     # Faraday constant (C/mol)
+        actual_temp_K = actual_temp + 273.15  # Kelvin
+        nernst_factor = (const_R * actual_temp_K) / (const_F * math.log(10))  # ≈ 59.16 mV at 25°C
+
+        # Estimate free chlorine concentration (ppm) from ORP
+        try:
+            base_chlorine_ppm = math.pow(10, (actual_orp - 650.0) / nernst_factor)
+
+            # Apply pH correction factor: relative fraction of active HOCl
+            # This is a standard logistic approximation
+            hocl_fraction = 1 / (1 + math.pow(10, actual_ph - 7.5))  # peak HOCl at ~pH 7.5
+            corrected_chlorine_ppm = base_chlorine_ppm * hocl_fraction
+
+            # Clamp to realistic range
+            if corrected_chlorine_ppm < 0 or corrected_chlorine_ppm > 10:
+                corrected_chlorine_ppm = None
+        except:
+            corrected_chlorine_ppm = None
+
+        # Store the estimated and pH-adjusted free chlorine level
+        device.sensors["chlorine"] = corrected_chlorine_ppm
+        
+        ## End Chlorine Calculation
 
         raw_cond = int.from_bytes(data[7:9], byteorder="little")
         if raw_cond != 0:
-            device.sensors["EC"] = 1.0 / (raw_cond * 0.000001) * 1.0615
-            device.sensors["salt"] = 1.0 / (raw_cond * 0.001) * 1.0615 * 500.0 / 1000.0
+            device.sensors["EC"] = raw_cond
+            # Convert electrical conductivity (µS/cm) to salt concentration (ppm)
+            # for range 0–5000 ppm. Empirical quadratic approximation.
+            device.sensors["salt"] = 1.433 * raw_cond - 0.00085 * raw_cond ** 2
         else:
             device.sensors["EC"] = None
             device.sensors["salt"] = None
