@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.button import ButtonEntity
+from homeassistant.components.button import (
+    ButtonEntity,
+    ButtonEntityDescription
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
@@ -21,8 +24,8 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the BlueConnect Go button."""
-    
+    """Set up the BlueConnect button."""
+
     coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
         entry.entry_id
     ]
@@ -42,28 +45,27 @@ class TakeMeasurementImmediately(
         hass: HomeAssistant,
         entry: ConfigEntry,
     ) -> None:
-        """Initialize the BlueConnect Go button."""
+        """Initialize the BlueConnect button."""
         super().__init__(coordinator)
         self.hass = hass
         self.entry = entry
         self.device = blueconnect_go_device
 
-        device_name = blueconnect_go_device.name or "BlueConnect"
-        name = f"{device_name} {blueconnect_go_device.identifier}"
+        name = f"{blueconnect_go_device.name or 'BlueConnect'} {blueconnect_go_device.identifier}"
+        device_id = blueconnect_go_device.address.replace(":", "_")
 
-        self._attr_unique_id = f"{name}_take_measurement".lower().replace(":", "_").replace(" ", "_")
-        self._attr_name = "Take Measurement"
-        self._id = blueconnect_go_device.address
+        self._attr_unique_id = f"{device_id}_take_measurement"
+        self._attr_name = "Take Measurement Now"
+        self.entity_description = ButtonEntityDescription(
+            key="take_measurement",
+            name="Take Measurement Now",
+            icon="mdi:test-tube",
+        )
         self._attr_device_info = DeviceInfo(
-            connections={
-                (
-                    "bluetooth",
-                    blueconnect_go_device.address,
-                )
-            },
+            connections={("bluetooth", blueconnect_go_device.address)},
             name=name,
             manufacturer="Blue Riiot",
-            model="Blue Connect Go",
+            model="Blue Connect",
             hw_version=blueconnect_go_device.hw_version,
             sw_version=blueconnect_go_device.sw_version,
         )
