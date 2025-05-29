@@ -1,7 +1,7 @@
-"""Constants for BlueConnect Go BLE parser."""
+"""Constants for BlueConnect BLE parser."""
 
-# How long to wait for a response from the BlueConnect Go device, in seconds
-NOTIFY_TIMEOUT = 15
+# How long to wait for a response from the BlueConnect device, in seconds
+NOTIFY_TIMEOUT = 30
 
 # BLE characteristic to request sensor reading
 BUTTON_CHAR_UUID = "F3300002-F0A2-9B06-0C59-1BC4763B5C00"
