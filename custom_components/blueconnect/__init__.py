@@ -1,4 +1,4 @@
-"""The BlueConnect Go BLE integration."""
+"""The BlueConnect BLE integration."""
 
 from __future__ import annotations
 
@@ -21,22 +21,21 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up BlueConnect Go BLE device from a config entry."""
+    """Set up BlueConnect BLE device from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     address = entry.unique_id
 
-    _LOGGER.debug("async_setup_entry")
     assert address is not None
 
     ble_device = bluetooth.async_ble_device_from_address(hass, address)
 
     if not ble_device:
         raise ConfigEntryNotReady(
-            f"Could not find BlueConnect Go device with address {address}"
+            f"Could not find BlueConnect device with address {address}"
         )
 
     async def _async_update_method():
-        """Get data from BlueConnect Go BLE."""
+        """Get data from BlueConnect BLE."""
         _LOGGER.debug("async_update_method")
         ble_device = bluetooth.async_ble_device_from_address(hass, address)
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
