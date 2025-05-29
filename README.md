@@ -1,6 +1,6 @@
-# Blue Connect Go
+# Blue Connect
 
-Home Assistant BLE Integration for the Blueriiot Blue Connect Go Pool Monitor
+Home Assistant BLE Integration for the Blueriiot Blue Connect (Go and Plus) Pool Monitor
 
 This integration is heavily based (basiscally started as a copy/paste) on the [Yinmik BLE-YC01 Integration](https://github.com/jdeath/BLE-YC01) by @jdeath.
 
